@@ -85,24 +85,39 @@ if urls_input.strip():
                     except Exception as e:
                         st.warning(f"Nie udało się odczytać pliku {file.name}: {e}")
                 
+                import re
+                def clean_url(u):
+                    if pd.isna(u): return ""
+                    u = str(u).strip()
+                    u = re.sub(r'^https?://', '', u)
+                    u = re.sub(r'^www\.', '', u)
+                    u = u.rstrip('/')
+                    return u
+
                 # Łączenie w jeden DataFrame dla Ahrefs i jeden dla Senuto
                 df_ahrefs_all = pd.concat(ahrefs_dfs, ignore_index=True) if ahrefs_dfs else pd.DataFrame()
                 df_senuto_all = pd.concat(senuto_dfs, ignore_index=True) if senuto_dfs else pd.DataFrame()
+                
+                if not df_ahrefs_all.empty:
+                    df_ahrefs_all['Clean_URL'] = df_ahrefs_all['Current URL'].apply(clean_url)
+                if not df_senuto_all.empty:
+                    df_senuto_all['Clean_URL'] = df_senuto_all['Adres URL'].apply(clean_url)
                 
                 final_results = []
                 
                 # Złączenie danych dla każdego adresu URL
                 for url in urls:
+                    clean_target = clean_url(url)
+                    
                     # Filtrujemy dane dla danego URL
                     df_a = pd.DataFrame()
                     df_s = pd.DataFrame()
                     
                     if not df_ahrefs_all.empty:
-                        # W Ahrefs URL może być dokładny lub mieć drobne różnice, ale staramy się dopasować 1:1
-                        df_a = df_ahrefs_all[df_ahrefs_all['Current URL'] == url].copy()
+                        df_a = df_ahrefs_all[df_ahrefs_all['Clean_URL'] == clean_target].copy()
                     
                     if not df_senuto_all.empty:
-                        df_s = df_senuto_all[df_senuto_all['Adres URL'] == url].copy()
+                        df_s = df_senuto_all[df_senuto_all['Clean_URL'] == clean_target].copy()
                     
                     # Wymagane kolumny
                     if not df_a.empty:
