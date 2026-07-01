@@ -37,6 +37,36 @@ if urls_input.strip():
         
     df_links = pd.DataFrame(links_data)
     
+    import json
+    import streamlit.components.v1 as components
+    
+    ahrefs_urls_list = [d["Ahrefs Link"] for d in links_data]
+    senuto_urls_list = [d["Senuto Link"] for d in links_data]
+    
+    html_code = f"""
+    <div style="display:flex; gap:10px; margin-bottom: 10px; font-family: sans-serif;">
+        <button onclick='openAhrefs()' style='padding:10px 20px; background-color:#ff4b4b; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold;'>Otwórz wszystkie linki (Ahrefs)</button>
+        <button onclick='openSenuto()' style='padding:10px 20px; background-color:#1c83e1; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold;'>Otwórz wszystkie linki (Senuto)</button>
+    </div>
+    <script>
+        var ahrefs_links = {json.dumps(ahrefs_urls_list)};
+        var senuto_links = {json.dumps(senuto_urls_list)};
+        
+        function openAhrefs() {{
+            ahrefs_links.forEach(function(link) {{
+                window.open(link, '_blank');
+            }});
+        }}
+        
+        function openSenuto() {{
+            senuto_links.forEach(function(link) {{
+                window.open(link, '_blank');
+            }});
+        }}
+    </script>
+    """
+    components.html(html_code, height=60)
+    
     # Używamy st.dataframe ze specjalną konfiguracją kolumn do klikania w linki
     st.dataframe(
         df_links,
