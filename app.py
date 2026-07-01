@@ -121,26 +121,42 @@ if urls_input.strip():
                     
                     # Wymagane kolumny
                     if not df_a.empty:
-                        df_a = df_a[['Current URL', 'Keyword', 'Volume', 'Current position']]
-                        df_a = df_a.rename(columns={
+                        cols_a = ['Current URL', 'Keyword', 'Volume', 'Current position']
+                        if 'Organic traffic' in df_a.columns:
+                            cols_a.append('Organic traffic')
+                        df_a = df_a[cols_a]
+                        
+                        rename_a = {
                             'Keyword': 'Fraza (Ahrefs)',
                             'Volume': 'Wolumen (Ahrefs)',
                             'Current position': 'Pozycja (Ahrefs)'
-                        })
+                        }
+                        if 'Organic traffic' in df_a.columns:
+                            rename_a['Organic traffic'] = 'Szacowany ruch (Ahrefs)'
+                            
+                        df_a = df_a.rename(columns=rename_a)
                         df_a['Merge_Key'] = df_a['Fraza (Ahrefs)'].str.lower().str.strip()
                     else:
-                        df_a = pd.DataFrame(columns=['Fraza (Ahrefs)', 'Wolumen (Ahrefs)', 'Pozycja (Ahrefs)', 'Merge_Key'])
+                        df_a = pd.DataFrame(columns=['Fraza (Ahrefs)', 'Szacowany ruch (Ahrefs)', 'Wolumen (Ahrefs)', 'Pozycja (Ahrefs)', 'Merge_Key'])
                         
                     if not df_s.empty:
-                        df_s = df_s[['Adres URL', 'Słowo kluczowe', 'Śr. mies. liczba wyszukiwań', 'Pozycja']]
-                        df_s = df_s.rename(columns={
+                        cols_s = ['Adres URL', 'Słowo kluczowe', 'Śr. mies. liczba wyszukiwań', 'Pozycja']
+                        if 'Szacowany ruch' in df_s.columns:
+                            cols_s.append('Szacowany ruch')
+                        df_s = df_s[cols_s]
+                        
+                        rename_s = {
                             'Słowo kluczowe': 'Fraza (Senuto)',
                             'Śr. mies. liczba wyszukiwań': 'Wolumen (Senuto)',
                             'Pozycja': 'Pozycje (Senuto)'
-                        })
+                        }
+                        if 'Szacowany ruch' in df_s.columns:
+                            rename_s['Szacowany ruch'] = 'Szacowany ruch (Senuto)'
+                            
+                        df_s = df_s.rename(columns=rename_s)
                         df_s['Merge_Key'] = df_s['Fraza (Senuto)'].str.lower().str.strip()
                     else:
-                        df_s = pd.DataFrame(columns=['Fraza (Senuto)', 'Wolumen (Senuto)', 'Pozycje (Senuto)', 'Merge_Key'])
+                        df_s = pd.DataFrame(columns=['Fraza (Senuto)', 'Szacowany ruch (Senuto)', 'Wolumen (Senuto)', 'Pozycje (Senuto)', 'Merge_Key'])
                         
                     # Outer Join po 'Merge_Key' (czyli tej samej frazie)
                     if not df_a.empty and not df_s.empty:
@@ -148,11 +164,13 @@ if urls_input.strip():
                     elif not df_s.empty:
                         df_merged = df_s
                         df_merged['Fraza (Ahrefs)'] = ""
+                        df_merged['Szacowany ruch (Ahrefs)'] = pd.NA
                         df_merged['Wolumen (Ahrefs)'] = ""
                         df_merged['Pozycja (Ahrefs)'] = ""
                     elif not df_a.empty:
                         df_merged = df_a
                         df_merged['Fraza (Senuto)'] = ""
+                        df_merged['Szacowany ruch (Senuto)'] = pd.NA
                         df_merged['Wolumen (Senuto)'] = ""
                         df_merged['Pozycje (Senuto)'] = ""
                     else:
@@ -160,8 +178,27 @@ if urls_input.strip():
                         
                     df_merged['URL'] = url
                     
+                    # Sortowanie
+                    if 'Szacowany ruch (Senuto)' not in df_merged.columns:
+                        df_merged['Szacowany ruch (Senuto)'] = pd.NA
+                    if 'Szacowany ruch (Ahrefs)' not in df_merged.columns:
+                        df_merged['Szacowany ruch (Ahrefs)'] = pd.NA
+                        
+                    df_merged['Szacowany ruch (Senuto)'] = pd.to_numeric(df_merged['Szacowany ruch (Senuto)'], errors='coerce')
+                    df_merged['Szacowany ruch (Ahrefs)'] = pd.to_numeric(df_merged['Szacowany ruch (Ahrefs)'], errors='coerce')
+                    
+                    df_merged = df_merged.sort_values(
+                        by=['Szacowany ruch (Senuto)', 'Szacowany ruch (Ahrefs)'], 
+                        ascending=[False, False], 
+                        na_position='last'
+                    )
+                    
+                    # Wypełnienie NaN pustym ciągiem jeśli chcemy ładnie w Excelu
+                    df_merged['Szacowany ruch (Senuto)'] = df_merged['Szacowany ruch (Senuto)'].fillna("")
+                    df_merged['Szacowany ruch (Ahrefs)'] = df_merged['Szacowany ruch (Ahrefs)'].fillna("")
+                    
                     # Selekcja i zmiana kolejności finałowych kolumn
-                    df_final_url = df_merged[['URL', 'Fraza (Senuto)', 'Wolumen (Senuto)', 'Pozycje (Senuto)', 'Fraza (Ahrefs)', 'Wolumen (Ahrefs)', 'Pozycja (Ahrefs)']]
+                    df_final_url = df_merged[['URL', 'Fraza (Senuto)', 'Szacowany ruch (Senuto)', 'Wolumen (Senuto)', 'Pozycje (Senuto)', 'Fraza (Ahrefs)', 'Szacowany ruch (Ahrefs)', 'Wolumen (Ahrefs)', 'Pozycja (Ahrefs)']]
                     final_results.append(df_final_url)
                     
                 if final_results:
