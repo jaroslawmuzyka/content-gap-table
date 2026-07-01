@@ -187,6 +187,15 @@ if urls_input.strip():
                     df_merged['Szacowany ruch (Senuto)'] = pd.to_numeric(df_merged['Szacowany ruch (Senuto)'], errors='coerce')
                     df_merged['Szacowany ruch (Ahrefs)'] = pd.to_numeric(df_merged['Szacowany ruch (Ahrefs)'], errors='coerce')
                     
+                    def round_traffic(x):
+                        if pd.isna(x):
+                            return pd.NA
+                        if x < 1:
+                            return 0
+                        return int(round(x))
+                        
+                    df_merged['Szacowany ruch (Senuto)'] = df_merged['Szacowany ruch (Senuto)'].apply(round_traffic)
+                    
                     df_merged = df_merged.sort_values(
                         by=['Szacowany ruch (Senuto)', 'Szacowany ruch (Ahrefs)'], 
                         ascending=[False, False], 
